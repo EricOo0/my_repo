@@ -143,7 +143,7 @@ class Tcp_server{
                 std::cout<<"send to client:"<<client<<std::endl;
                 int len;
                 char buffer_new[BUFFER_SIZE]={};
-                sprintf(buffer_new,"client%d: ",selffd);
+                sprintf(buffer_new,"#client%d#",selffd);
                 strcat(buffer_new,buffer);
                 if(( len = send(client,buffer_new,strlen(buffer_new),0)) ==-1){
                     perror("send()");
