@@ -8,7 +8,10 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-
+#include<sys/epoll.h>
+#include<thread>
+#include<pthread.h>
+#define MAX_FD_SIZE 1024
 int create_listenfd(){
     //建立监听套接字的步骤 sbla
     int listenfd = socket(AF_INET,SOCK_STREAM, 0);
@@ -42,12 +45,15 @@ void handle_con(int connfd){
     //处理请求
     std::cout<<"handle!"<<std::endl;
     char request[1024]={0};
+    std::string msg;//test:接收大文件用这个，以免空间不够
     int offset =0;
     int nread=0;
     while(1){
+        //char request[1024]={0};
         nread=recv(connfd,request+offset,100,0);
-        //sleep(0.1);
+        //string +=request
         std::cout<<"reading offset:"<<offset<<std::endl;
+        std::cout<<"reading content:"<<request<<std::endl;
         offset+=nread;
         if(nread <100){break;}
     }
@@ -73,35 +79,78 @@ void handle_con(int connfd){
     }
     //打开文件 构建响应
     char response[1024*1024]={};
-    sprintf(response,"HTTP/1.0 200 OK\r\nContent-Type: %s\r\n\r\n",mime);//响应头
+    sprintf(response,"HTTP/1.0 200 OK\r\nContent-Type: %s\r\n\r\n",mime);//状态行+响应头
     int headlen = strlen(response);
     int filefd = open(filename,O_RDONLY);
     int filelen=read(filefd,response+headlen,sizeof(response)-headlen);//响应内容
 
     //返回
-    write(connfd,response,headlen+filelen);
+    std::cout<<"send to :"<<connfd<<std::endl;
+    send(connfd,response,headlen+filelen,0);
     std::cout<<"close!"<<std::endl;
     close(connfd);
     
 }
-int main(){
-    int sockfd = create_listenfd();
-    int connfd=0;
-    struct sockaddr_in client;
-    socklen_t client_len = 1;
-    std::cout<<"waiting!"<<std::endl;
+void thread_accept(int sockfd,int epoll_accept_fd,int epoll_listen_fd){
+    std::cout<<"listenfd"<<sockfd<<std::endl;
+    struct epoll_event ev,events[MAX_FD_SIZE];
+    ev.data.fd=sockfd;
+    ev.events=EPOLLIN;
+    epoll_ctl(epoll_accept_fd,EPOLL_CTL_ADD,sockfd,&ev);
     while(true){
-    std::cout<<"waiting!"<<std::endl;
-    if(connfd = accept(sockfd,(struct sockaddr *)&client,&(client_len)) == -1){
-        perror("accept()");
-        exit(-1);
+        int ret = epoll_wait(epoll_accept_fd,events,MAX_FD_SIZE,-1);
+        if(ret){
+            for(int i=0;i<ret;i++){
+                int eventfd = events[i].data.fd;
+                //聊天室连接
+                if(eventfd == sockfd && events[i].events == EPOLLIN){
+                    //new connection
+                    struct sockaddr_in client;
+                    socklen_t client_len = 1;
+                    int clientfd ;
+                    if((clientfd = accept(sockfd,(struct sockaddr *) &client,&client_len)) == -1){
+                         perror("accept()");
+                         exit(1);
+                    }
+                    struct epoll_event ev2;
+                    ev2.data.fd = clientfd;
+                    ev2.events = EPOLLIN;
+                    std::cout<<"new client connected! fd_num:"<<clientfd<<std::endl;
+                    epoll_ctl(epoll_listen_fd,EPOLL_CTL_ADD,clientfd, &ev2);//加入连接epoll
+                }
+            }
+        }
     }
-    std::cout<<"waiting!"<<std::endl;
-    handle_con(connfd);
-    //close(connfd);
+}
+
+void thread_handle(int epoll_listen_fd){
+    struct epoll_event ev,events[MAX_FD_SIZE];
+     while(true){
+        int ret = epoll_wait(epoll_listen_fd,events,MAX_FD_SIZE,-1);
+         for(int i=0;i<ret;i++){
+                int clientfd = events[i].data.fd;
+                std::cout<<"clientfd"<<clientfd<<std::endl;
+                if(events[i].events == EPOLLIN){
+                    handle_con(clientfd);
+                    struct epoll_event ev2;
+                    ev2.data.fd = clientfd;
+                    ev2.events = EPOLLIN;
+                    epoll_ctl(epoll_listen_fd,EPOLL_CTL_DEL,clientfd,&ev2);
+                }
+         }
+     }
+}
+int main(){
+    //创建两个epoll 一个负责接受连接一个负责发送
+    int epoll_accept_fd = epoll_create(1);
+    int epoll_listen_fd = epoll_create(MAX_FD_SIZE);
+    int sockfd = create_listenfd();
+    std::thread t_accept(thread_accept,sockfd,epoll_accept_fd,epoll_listen_fd);
+    std::thread t_handle(thread_handle,epoll_listen_fd);
+    t_accept.join();
+    t_handle.join();
     
-    }
     close(sockfd);
-    
+    return 0;
 
 }

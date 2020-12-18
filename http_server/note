@@ -1,2 +1,43 @@
 压力测试
     ab -n 100 -c 10
+    MIME(Multipurpose Internet Mail Extensions)多用途互联网邮件扩展类型。是设定某种扩展名的文件用一种应用程序来打开的方式类型，当该扩展名文件被访问的时候，浏览器会自动使用指定应用程序来打开。
+http请求：
+    GET 由请求行 请求头部 空行 请求数据（GET一般是空）组成 
+    GET安全性低，通过GET提交数据，用户名和密码将明文出现在URL上 POST高点
+例子：
+    GET / HTTP/1.1        --请求行，由请求方法、URI、HTTP协议版本，他们之间用空格分隔。
+    Host: www.enjoytoday.cn
+    Connection: keep-alive
+    Upgrade-Insecure-Requests: 1
+    User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.84 Safari/537.36
+    Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+    Referer: http://www.enjoytoday.cn/posts/326
+    Accept-Encoding: gzip, deflate, sdch
+    Accept-Language: zh-CN,zh;q=0.8
+    Cookie: bdshare_firstime=1466032270994; UM_distinctid=15c4ef2ac4e2e4-0d13269271b947-1b2a120b-1fa400-15c4ef2ac4f7b5; un=aGZjYWk=; comment_author=aGZjYWk=; comment_author_email=1710600212@qq.com; comment_author_url=http://www.enjoytoday.cn; c_id=dUhIaTlndmc4MVVYbjRQTGxMRTotMTpFODg3QjgzQjg1NjgxQjQxRUYxNjg2QzJFRkMyQjI2QQ==; JSESSIONID=ADBC8C3DADF6C815D778450C193C6637.ajp13_worker; Hm_lvt_ce55bfda158556585a8b7b246346c8ba=1498560244,1498739070,1498833193,1498917432; Hm_lpvt_ce55bfda158556585a8b7b246346c8ba=1498917597; CNZZDATA1262047894=1598545996-1495973145-%7C1498917578
+   --请求头部，主要是用于说明请求源、连接类型、以及一些Cookie信息等。
+   --空行 （\r\n\r\n）
+    username=hfcai&sex=man--请求数据
+http响应：
+    HTTP响应报文由状态行（HTTP版本、状态码（数字和原因短语））、响应头部、空行和响应体4个部分构成。
+    
+  HTTP/1.1 200 OK --状态行
+  Date: Sat, 01 Jul 2017 14:51:26 GMT
+  Server: Apache/2.4.7 (Ubuntu)
+  Set-Cookie: JSESSIONID=84C993F5E433C4DE9BFBA57150FFC065.ajp13_worker;path=/;HttpOnly
+  Content-Language: zh-CN
+  Vary: Accept-Encoding
+  Content-Encoding: gzip
+  Content-Length: 7333
+  Keep-Alive: timeout=5, max=100
+  Connection: Keep-Alive
+  Content-Type: text/html;charset=UTF-8 --响应头部
+  --空行
+  <html>  --响应数据
+  <head>
+  <title>title of html.</html>
+  </head>
+  <body>
+  <h1>Hello world!</h1>
+  </body>
+  </html>
