@@ -3,11 +3,11 @@
 #include<chatting_window.h>
 #include<QToolButton>
 #include<QSize>
-Dialog::Dialog(QWidget *parent) :
+Dialog::Dialog(QWidget *parent,QString name) :
     QDialog(parent),
-    ui(new Ui::Dialog)
+    ui(new Ui::Dialog),
+    usrname(name)
 {
-
     ui->setupUi(this);
     this->setWindowTitle("author:wzf");
     this->setWindowIcon(QPixmap(":/icon/icon/OIP.jpg"));
@@ -24,6 +24,7 @@ Dialog::Dialog(QWidget *parent) :
     indexlist<<"1"<<"2"<<"3"<<"4"<<"5"<<"6";
     //保存按钮容器
     QVector<QToolButton *> btnvec;
+    //聊天室选择界面
     for(int i=0;i<6;i++){
         QToolButton *portrait = new QToolButton;
          portrait->setText(indexlist[i]);
@@ -42,10 +43,9 @@ Dialog::Dialog(QWidget *parent) :
 }
 void Dialog::click_on_1(QString name){
     this->hide();
-    chatting_window *mychat_room = new chatting_window(this);
+    chatting_window *mychat_room = new chatting_window(this,this->usrname);
     mychat_room->setWindowTitle(name);
     mychat_room->show();
-
 }
 Dialog::~Dialog()
 {
