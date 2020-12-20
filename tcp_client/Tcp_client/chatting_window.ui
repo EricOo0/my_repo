@@ -130,6 +130,9 @@
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
+                  <property name="currentText">
+                   <string>10</string>
+                  </property>
                   <item>
                    <property name="text">
                     <string>1</string>

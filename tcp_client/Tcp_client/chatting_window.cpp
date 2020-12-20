@@ -121,7 +121,7 @@ void chatting_window::msg_recv(){
     else if(type == "msg"){
         this->ui->recv_box->append("["+name+"]"+time+":");//时间
         QString msg = recv.mid(end+1);
-        this->ui->recv_box->append(msg+"");//消息
+        this->ui->recv_box->append(msg);//消息
         //将用户加入右侧user栏目
             bool online = this->ui->user_box->findItems(name,Qt::MatchExactly).isEmpty();//判断是否在use里
             if(online){
@@ -139,7 +139,7 @@ void chatting_window::msg_send(){
       qDebug()<< this->ui->send_box->toPlainText();
       QByteArray test =this->ui->send_box->toPlainText().toUtf8();
       QByteArray msg = "!msg!";
-      msg +="#"+this->usrname+"#";
+      msg +="#"+this->usrname+"#"+test;
       this->tcp->write(msg);
       QString time = QDateTime::currentDateTime().toString();
       this->ui->recv_box->append("[ me ]"+time+":");
