@@ -18,6 +18,7 @@
 
 #include<set>
 #include<string>
+#include<map>
 #include<thread>
 #include<mutex>//锁
 
@@ -35,6 +36,7 @@ class Tcp_server{
         int epoll_accept_fd ;
         int epoll_listen_fd ;
         int epoll_http_fd ;
+        //std::map<int,std::string> name;//存储用户名和fd对应关系
     public:
         std::set<int> clientset;
         std::mutex mtx;
@@ -143,7 +145,9 @@ class Tcp_server{
                 std::cout<<"send to client:"<<client<<std::endl;
                 int len;
                 char buffer_new[BUFFER_SIZE]={};
-                sprintf(buffer_new,"#client%d#",selffd);
+                //开头附加加消息信息
+               // sprintf(buffer_new,"#total");
+                //sprintf(buffer_new,"#client%d#",selffd);
                 strcat(buffer_new,buffer);
                 if(( len = send(client,buffer_new,strlen(buffer_new),0)) ==-1){
                     perror("send()");

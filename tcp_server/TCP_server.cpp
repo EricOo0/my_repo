@@ -53,11 +53,11 @@ void thread_accpet(Tcp_server &server){
                     ev.events=EPOLLIN;
                     epoll_ctl(epoll_listen_fd,EPOLL_CTL_ADD,clientfd, &ev);//加入连接epoll
                     server.mtx.unlock();    
-                    char welcome[BUFFER_SIZE];
-                    sprintf(welcome,"client%d enter,welcome!",clientfd);
-                    server.send2allclient(welcome,clientfd);
+                  //  char welcome[BUFFER_SIZE];
+                  //  sprintf(welcome,"client%d enter,welcome!",clientfd);
+                   // server.send2allclient(welcome,clientfd);
                     std::cout<<"client"<<clientfd<<"connected"<<std::endl;
-                    memset(welcome,0,BUFFER_SIZE);
+                    //memset(welcome,0,BUFFER_SIZE);
                 }
                 //http连接请求
                 else if(eventfd == httpfd && events[i].events == EPOLLIN)
