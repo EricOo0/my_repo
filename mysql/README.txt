@@ -51,3 +51,6 @@ db：数据库名
 create database login;
 create table usrname (usrname VARCHAR(10) not null ,passwd varchar(15));
 insert into usrname values("wzf","******");
+
+
+g++ TCP_server.cpp --std=c++11 -pthread -I/usr/include/mysql -L/usr/lib64/mysql  -lmysqlclient -o TCP_server

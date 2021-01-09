@@ -97,7 +97,7 @@ void thread_listen(Tcp_server &server){
             for(int i=0;i<ret;i++){
                 int clientfd = events[i].data.fd;
                 if(events[i].events == EPOLLIN){
-                    int len=recv(clientfd,buffer,1024,0);
+                    int len=recv(clientfd,buffer,1024,0);//recv目前假设消息长度较短
                     if(len <= 0){
                         //返回出错
                         perror("recv()");
@@ -113,8 +113,17 @@ void thread_listen(Tcp_server &server){
                             server.mtx.unlock();
                             return;
                         }
-                        std::cout<<buffer<<std::endl;
-                        server.send2allclient(buffer,clientfd);
+                        //判断消息类型
+                        std::string response = server.msg_judge(buffer,clientfd);
+                        if(response == "#msg#"){ 
+                            //聊天消息
+                            server.send2allclient(buffer,clientfd);
+                            
+                        }
+                        else{
+                             send(clientfd,response.data(),strlen(response.data()),0);
+
+                        }
                         memset(buffer,0,BUFFER_SIZE);
                     }
                 }
@@ -122,7 +131,6 @@ void thread_listen(Tcp_server &server){
         }
     }
 }
-
 
 void thread_http(Tcp_server &server){
     

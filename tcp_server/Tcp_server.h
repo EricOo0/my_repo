@@ -15,12 +15,14 @@
 #include<arpa/inet.h>//定义ip地址转换的函数
 #include<sys/poll.h>
 #include<sys/epoll.h>
+#include <unordered_map>
 
 #include<set>
 #include<string>
 #include<map>
 #include<thread>
 #include<mutex>//锁
+#include <mysql/mysql.h>
 
 #define MAX_FD_SIZE 1024
 #define BUFFER_SIZE 1024
@@ -32,6 +34,10 @@ class Tcp_server{
         in_addr_t ip_addr;
         int serverport;
         int httpport;
+        //创建mysql结构
+        MYSQL mysql;
+        //用户id和fd的对应map
+        std::unordered_map<int , std::string>id_map;
         //创建三个epoll reactor模型
         int epoll_accept_fd ;
         int epoll_listen_fd ;
@@ -55,6 +61,7 @@ class Tcp_server{
             httpport(http_port),
             serverport(server_port)
             {
+                
                 //创建两个epoll reactor模型
                 epoll_accept_fd = epoll_create(2);
                 epoll_listen_fd = epoll_create(MAX_FD_SIZE);
@@ -67,6 +74,8 @@ class Tcp_server{
                     perror("socket()");//打印错误
                     exit(1);
                 }
+               
+
             };
         void bind_socket(){
             //socket init
@@ -135,9 +144,9 @@ class Tcp_server{
             ev.data.fd=clientfd;
             ev.events=EPOLLIN;
             epoll_ctl(epoll_listen_fd,EPOLL_CTL_DEL,clientfd,&ev);
-            char leave[BUFFER_SIZE];
-            sprintf(leave,"client%d leave!",clientfd);
-            send2allclient(leave,clientfd);
+           // char leave[BUFFER_SIZE];
+            //sprintf(leave,"#msg#usrleave||%s$$",id_map[clientfd].data());
+           // send2allclient(leave,clientfd);
         }
         void send2allclient(char *buffer,int &selffd){
             for(auto client:clientset){
@@ -145,26 +154,159 @@ class Tcp_server{
                 std::cout<<"send to client:"<<client<<std::endl;
                 int len;
                 char buffer_new[BUFFER_SIZE]={};
-                //开头附加加消息信息
-               // sprintf(buffer_new,"#total");
-                //sprintf(buffer_new,"#client%d#",selffd);
-                strcat(buffer_new,buffer);
-                if(( len = send(client,buffer_new,strlen(buffer_new),0)) ==-1){
+                
+                std::string msg=static_cast<std::string>(buffer);
+                if(msg.find("#msg#msg") != msg.npos){
+                    //正常通信消息直接转发
+                    if(( len = send(client,buffer,strlen(buffer),0)) ==-1){
                     perror("send()");
                     mtx.lock();
                     clientset.erase(client);
+                    id_map.erase(selffd);
                     delete_client(client);
                     mtx.unlock();
                 }
                 }
+                else{
+                    //hello消息或者leave消息或者hellreply消息，加上id转发
+                    //回复消息格式#msg#type||id$$content；
+                     sprintf(buffer_new,"||%s$$",id_map[selffd].data());
+                     strcat(buffer,buffer_new);
+                     std::cout<<buffer;
+                    if(( len = send(client,buffer,strlen(buffer),0)) ==-1){
+                        perror("send()");
+                        mtx.lock();
+                        clientset.erase(client);
+                        id_map.erase(selffd);
+                        delete_client(client);
+                        mtx.unlock();
+                     }
+                }
+                //开头附加加消息信息
+               // sprintf(buffer_new,"#total");
+                //sprintf(buffer_new,"#client%d#",selffd);
+               
+                }
             }
         }
-        
+        int connect2sql(const char *db){
+            if(!mysql_real_connect(&mysql,"49.234.75.120","wzf","weizhifeng10",db,3306,"unix_socket",0)){
+                std::cout<<"connect to "<<db<<" failed!"<<std::endl;
+                std::cout<<mysql_error(&mysql);
+                return 0;
+            }
+            std::cout<<"connect to "<<db<<" successful!"<<std::endl;
+            return 1;
+        }
+        std::string usr_authorize(std::string usrname,std::string passwd){
+            //判断账户密码是否正确
+            std::string cmd="select * from usrname where usrname=";
+            cmd =cmd + "'"+usrname+"'";
+            int status = mysql_query(&mysql,cmd.data());
+            if(status != 0){
+                std::cout<<"cmd error:"<<cmd<<std::endl;
+                return NULL;
+            }
+            MYSQL_RES *res_set;
+            res_set = mysql_store_result(&mysql);//存储执行结果
+
+            int count = mysql_num_rows(res_set);//统计多少行
+            if(count == 0 ){
+                std::cout<<"usrname not exit!"<<std::endl;
+                return "failed";
+            }
+            MYSQL_ROW row = mysql_fetch_row(res_set);//row[0]是个void型指针
+            std::string pwd = static_cast<std::string>(row[1]);//判断密码是否正确
+            if(pwd != passwd){
+                std::cout<<"cmd error:"<<cmd<<std::endl;
+                return "failed";
+            }
+            //返回用户ID
+            std::string id = static_cast<std::string>(row[2]);
+            return id;
+        }
+        int usr_register(std::string msg){
+            //#register#usrname||passwd$$id
+            std::string usrname;
+            std::string passwd;
+            std::string id;
+            int pos=msg.find("||");
+            int pos2=msg.find("$$");
+            usrname = msg.substr(10,pos-10);
+            passwd = msg.substr(pos+2,pos2-pos-2);
+            id=msg.substr(pos2+2);
+            std::string cmd="insert into usrname values ";
+            cmd =cmd + "('"+usrname+"','"+passwd+"','"+id+"')";
+            int status = mysql_query(&mysql,cmd.data());
+            if(status != 0){
+                std::cout<<mysql_error(&mysql);
+                std::cout<<"register failed:"<<cmd<<std::endl;
+                return 0;
+            }
+            return 1;
+        }
+        std::string msg_judge(char *buffer,int clientfd){
+            std::string msg=static_cast<std::string>(buffer);
+            std::cout<<"buffer:"<<buffer<<std::endl;
+            if(msg.find("#login#") != msg.npos){
+                //login消息
+                const char db[]="login";
+                //初始化mysql
+                if(!mysql_init(&mysql))//初始化mysql结构
+                {
+                    std::cout<<mysql_error(&mysql);
+                }
+                std::cout<<"mysql init!"<<std::endl;
+                if(!connect2sql(db)){
+                    return "#login#failed";
+                    
+                }
+                std::string usrname;
+                std::string passwd;
+                int pos=msg.find("||");
+                usrname = msg.substr(7,pos-7);
+                passwd = msg.substr(pos+2);
+                std::string id = usr_authorize(usrname,passwd);
+                if(id == "failed"){
+                    std::cout<<"usrname or passwd is incorret";
+                    return "#login#failed";
+                    mysql_close(&mysql);
+                }
+                std::cout<<id;
+                mysql_close(&mysql);   
+                id_map[clientfd] =id ; 
+                return "#login#"+id;
+            
+            }
+            if(msg.find("#register#") != msg.npos){
+                //判断是否是注册消息
+                const char db[]="login";
+                //初始化mysql
+                if(!mysql_init(&mysql))//初始化mysql结构
+                {
+                    std::cout<<mysql_error(&mysql);
+                }
+                std::cout<<"mysql init!"<<std::endl;
+                if(!connect2sql(db)){
+                    return "#register#failed";
+                    
+                }
+                if(usr_register(msg)){
+                    mysql_close(&mysql);
+                    return "#register#success";
+                }
+                return "#register#failed";
+            }
+            if(msg.find("#msg#") != msg.npos){
+                //非login消息
+                return "#msg#";
+            }
+            
+        }
         void send_msg(){}
         void send_json_msg(std::string &dir){}
         void recv_msg(){}
         void http_recv(){
-
         }
         const int get_serverfd(){
             return serverfd;
