@@ -44,7 +44,7 @@ Dialog::Dialog(QWidget *parent,QString name) :
 void Dialog::click_on_1(QString name){
     this->hide();
     chatting_window *mychat_room = new chatting_window(this,this->usrname);
-    mychat_room->setWindowTitle(name);
+    mychat_room->setWindowTitle(this->usrname);
     mychat_room->show();
 }
 Dialog::~Dialog()

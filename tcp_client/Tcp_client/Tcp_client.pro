@@ -20,19 +20,22 @@ SOURCES += \
     dialog.cpp \
     login.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    reginster.cpp
 
 HEADERS += \
     chatting_window.h \
     dialog.h \
     login.h \
-    mainwindow.h
+    mainwindow.h \
+    reginster.h
 
 FORMS += \
     chatting_window.ui \
     dialog.ui \
     login.ui \
-    mainwindow.ui
+    mainwindow.ui \
+    reginster.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

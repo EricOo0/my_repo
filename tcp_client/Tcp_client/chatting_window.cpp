@@ -6,6 +6,7 @@
 #include<QDateTime>
 #include <QKeyEvent>//按键事件
 #include<QColorDialog>//颜色
+
 chatting_window::chatting_window(QWidget *parent,QString name) :
     QMainWindow(parent),
     ui(new Ui::chatting_window),
@@ -13,15 +14,13 @@ chatting_window::chatting_window(QWidget *parent,QString name) :
 {
 
     ui->setupUi(this);
-
-
     connect(ui->btn_quit,&QPushButton::clicked,this,[=](){
        this->parent_show(parent);
     }); //关闭窗口的触发
 
     this->tcp = new QTcpSocket(this);
     this->tcp->connectToHost("49.234.75.120",10000);//连接服务器
-    this->usrin();//进页面先给其他用户法消息 #usrin#
+    this->usrin();//进页面先给其他用户发消息
     connect(tcp,&QTcpSocket::readyRead,this,&chatting_window::msg_recv);//接受消息触发
     connect(ui->btn_send,&QPushButton::clicked,this,&chatting_window::msg_send);//发送消息触发
     //enter按键触发
@@ -82,50 +81,69 @@ void chatting_window::msg_recv(){
     QByteArray recv=this->tcp->read(1024);
     qDebug()<<recv;
     QString time = QDateTime::currentDateTime().toString();
-    //接收消息类型
-    int begin = recv.indexOf('!',0);
-    int  end=recv.lastIndexOf('!');
-    QString type = recv.mid(begin+1,end-begin-1);
-
-     begin = recv.indexOf('#',0);
-     end=recv.lastIndexOf('#');
-     QString name = recv.mid(begin+1,end-begin-1);
+    //接收消息类型 #msg#msg||id$$content
+    //hello消息#msg#hello||id$$
+    int begin = recv.indexOf("#msg#",0);
+    int end = recv.indexOf("||");
+    QString type=recv.mid(5,end-5);
+    begin = recv.indexOf("||");
+    end=recv.lastIndexOf("$$");
+    int msg_pos = end+2;
+    QString id = recv.mid(begin+2,end-begin-2);
 
      this->ui->recv_box->setFont(this->ui->font->font());
      this->ui->recv_box->setFontPointSize(this->ui->size->currentText().toDouble());
-    if(type == "usrin"){
+    if(type == "hello"){
         //将用户加入右侧user栏目
-            bool online = this->ui->user_box->findItems(name,Qt::MatchExactly).isEmpty();//判断是否在use里
+            bool online = this->ui->user_box->findItems(id,Qt::MatchExactly).isEmpty();//判断是否在use里
             if(online){
-                QTableWidgetItem *usr = new QTableWidgetItem(name);
+                QTableWidgetItem *usr = new QTableWidgetItem(id);
                 this->ui->user_box->insertRow(0);
                 this->ui->user_box->setItem(0,0,usr);
                 this->ui->online_lable->setText(QString("online: %2 people").arg(this->ui->user_box->rowCount()-1));//统计人数
             }
             this->ui->recv_box->setTextColor(Qt::gray);
-            this->ui->recv_box->append(name+" enter");//消息
+            this->ui->recv_box->append(id+" enter");//消息
+            this->ui->recv_box->setTextColor(Qt::black);
+            //返回hello_reply消息#msg#hello_reply
+            QByteArray msg="#msg#hello_reply";
+
+            this->tcp->write(msg);
+
+    }
+    else if(type == "hello_reply"){
+        //将用户加入右侧user栏目
+            bool online = this->ui->user_box->findItems(id,Qt::MatchExactly).isEmpty();//判断是否在use里
+            if(online){
+                QTableWidgetItem *usr = new QTableWidgetItem(id);
+                this->ui->user_box->insertRow(0);
+                this->ui->user_box->setItem(0,0,usr);
+                this->ui->online_lable->setText(QString("online: %2 people").arg(this->ui->user_box->rowCount()-1));//统计人数
+            }
+            this->ui->recv_box->setTextColor(Qt::gray);
+            this->ui->recv_box->append(id+" enter");//消息
             this->ui->recv_box->setTextColor(Qt::black);
     }
     else if(type == "usrleave"){
         //将用户右侧user栏目删除
-            bool online = this->ui->user_box->findItems(name,Qt::MatchExactly).isEmpty();//判断是否在use里
+            bool online = this->ui->user_box->findItems(id,Qt::MatchExactly).isEmpty();//判断是否在use里
             if(!online){
-                int row = this->ui->user_box->findItems(name,Qt::MatchExactly).first()->row();
+                int row = this->ui->user_box->findItems(id,Qt::MatchExactly).first()->row();
                 this->ui->user_box->removeRow(row);
                 this->ui->online_lable->setText(QString("online: %2 people").arg(this->ui->user_box->rowCount()-1));//统计人数
             }
             this->ui->recv_box->setTextColor(Qt::gray);
-            this->ui->recv_box->append(name+" leave");//消息
+            this->ui->recv_box->append(id+" leave");//消息
             this->ui->recv_box->setTextColor(Qt::black);
     }
     else if(type == "msg"){
-        this->ui->recv_box->append("["+name+"]"+time+":");//时间
-        QString msg = recv.mid(end+1);
+        this->ui->recv_box->append("["+id+"]"+time+":");//时间
+        QString msg = recv.mid(msg_pos);
         this->ui->recv_box->append(msg);//消息
         //将用户加入右侧user栏目
-            bool online = this->ui->user_box->findItems(name,Qt::MatchExactly).isEmpty();//判断是否在use里
+            bool online = this->ui->user_box->findItems(id,Qt::MatchExactly).isEmpty();//判断是否在use里
             if(online){
-                QTableWidgetItem *usr = new QTableWidgetItem(name);
+                QTableWidgetItem *usr = new QTableWidgetItem(id);
                 this->ui->user_box->insertRow(0);
                 this->ui->user_box->setItem(0,0,usr);
 
@@ -135,11 +153,11 @@ void chatting_window::msg_recv(){
     }
 }
 void chatting_window::msg_send(){
-    //发送消息   type+usrname+msg;
+    //发送消息   #msg#msg||id$$msg;
       qDebug()<< this->ui->send_box->toPlainText();
       QByteArray test =this->ui->send_box->toPlainText().toUtf8();
-      QByteArray msg = "!msg!";
-      msg +="#"+this->usrname+"#"+test;
+      QByteArray msg="#msg#msg||";
+      msg =msg + usrname.toUtf8() +"$$"+test;
       this->tcp->write(msg);
       QString time = QDateTime::currentDateTime().toString();
       this->ui->recv_box->append("[ me ]"+time+":");
@@ -147,15 +165,13 @@ void chatting_window::msg_send(){
       this->ui->send_box->clear();
 }
 void chatting_window::usrin(){
-    //发送hello消息   type+usrname+msg="";
-     QByteArray  msg="!usrin!";
-     msg +="#"+this->usrname+"#";
-    this->tcp->write(msg);
+    //发送hello消息 #msg#hello;
+     QByteArray  msg="#msg#hello";
+     this->tcp->write(msg);
 }
 void chatting_window::usrleave(){
-    //发送leave消息   type+usrname+msg="";
-   QByteArray  msg="!usrleave!";
-    msg +="#"+this->usrname+"#";
+    //发送leave消息;
+   QByteArray  msg="#msg#usrleave";
    this->tcp->write(msg);
 }
 void chatting_window::parent_show(QWidget *parent){
