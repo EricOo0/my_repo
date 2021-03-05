@@ -52,5 +52,5 @@ for menu in menus:
 
     m.plot(forecast)
     print(type(forecast.tail(31)['yhat']))
-    forecast.tail(31)['yhat'].to_excel(menu+".xls")
+    forecast.tail(31).to_excel(menu+".xls")
     #future.tail()
