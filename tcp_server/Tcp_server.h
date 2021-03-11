@@ -153,7 +153,8 @@ class Tcp_server{
                 if(client !=selffd){
                 std::cout<<"send to client:"<<client<<std::endl;
                 int len;
-                char buffer_new[BUFFER_SIZE]={};
+                //char buffer_add[BUFFER_SIZE]={};
+                //char buffer_send[BUFFER_SIZE]={};
                 
                 std::string msg=static_cast<std::string>(buffer);
                 if(msg.find("#msg#msg") != msg.npos){
@@ -170,10 +171,10 @@ class Tcp_server{
                 else{
                     //hello消息或者leave消息或者hellreply消息，加上id转发
                     //回复消息格式#msg#type||id$$content；
-                     sprintf(buffer_new,"||%s$$",id_map[selffd].data());
-                     strcat(buffer,buffer_new);
-                     std::cout<<buffer;
-                    if(( len = send(client,buffer,strlen(buffer),0)) ==-1){
+                     msg = msg +"||"+id_map[selffd]+"$$";
+        
+                     std::cout<<msg<<std::endl;
+                    if(( len = send(client,msg.data(),msg.size(),0)) ==-1){
                         perror("send()");
                         mtx.lock();
                         clientset.erase(client);
@@ -181,6 +182,7 @@ class Tcp_server{
                         delete_client(client);
                         mtx.unlock();
                      }
+                     sleep(0.1);
                 }
                 //开头附加加消息信息
                // sprintf(buffer_new,"#total");
