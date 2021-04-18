@@ -32,3 +32,36 @@ public:
     }
 };
 ```
+
+# 309. 最佳买卖股票时机含冷冻期
+## 股票买卖题一般都是动态规划，找到状态转移方程是关建  
+    假设f是今天结束后的收益  
+	f[i][0]是继续持有股票的收益
+	f[i][1]是卖出股票的收益   
+	状态转移方程则为
+	f[i][0]=f[i-1][0]
+	f[i][1]=f[i-1][0]+price[i]
+	初始状态
+	f[0][0]=-price[0]
+	f[0][1]=0
+	加了约束条件的话就会多增加几个状态最后返回几种状态中的最大
+## C++实现
+```
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        vector<vector<int>> f(prices.size(),vector<int>(3,0));
+        f[0][0]=-prices[0];
+        f[0][1]=0;
+        f[0][2]=0;
+        for(int i=1;i<prices.size();i++){
+        //三种情况 持有 未持有-冷冻期  未持有-非冷冻期
+            f[i][0]=max(f[i-1][0],f[i-1][2]-prices[i]);
+            f[i][1]=f[i-1][0]+prices[i];
+            f[i][2]=max(f[i-1][1],f[i-1][2]);
+        }
+        return max(max(f[prices.size()-1][0],f[prices.size()-1][1]),f[prices.size()-1][2]);
+        
+    }
+};
+```
