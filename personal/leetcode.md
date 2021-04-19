@@ -65,3 +65,96 @@ public:
     }
 };
 ```
+
+# 27. 移除元素
+## 给你一个数组 nums 和一个值 val，你需要 原地 移除所有数值等于 val 的元素，并返回移除后数组的新长度。  
+	不要使用额外的数组空间，你必须仅使用 O(1) 额外空间并 原地 修改输入数组。
+	
+	原地修改数组，所以不可以用新的数组存储符合条件要求，可用双指针（和26思路一样），把符合要求的元素的放到left指针前面，right指针用于遍历数组
+	
+
+# C++实现
+```
+class Solution {
+public:
+    int removeElement(vector<int>& nums, int val) {
+        int left=0;
+        int right=0;
+        while(right<nums.size()){
+            if(nums[right]!=val){
+                int tmp=nums[left];
+                nums[left]=nums[right];
+                nums[right]=tmp;
+                left++;
+            }
+            right++;
+        }
+        return left;
+    }
+};
+```
+# 75. 颜色分类
+	给定一个包含红色、白色和蓝色，一共 n 个元素的数组，原地对它们进行排序，使得相同颜色的元素相邻，并按照红色、白色、蓝色顺序排列。
+	此题中，我们使用整数 0、 1 和 2 分别表示红色、白色和蓝色。
+
+	可以用单指针遍历两次，找0和2分别放到首部和尾部
+	也可以用双指针遍历一次
+	1、找0和1，用两个指针p0和p1来存0和1的位置，从左到右遍历数组，找到1则和p1交换，p1加1；找到0则和p0交换，但此时p0和p1都要加1（如果p1>p0，此时交换出来的nums[i]是1，还要再赋给p1才能给p1加1）
+#C++实现
+```
+class Solution {
+public:
+    void sortColors(vector<int>& nums) {
+        int p0=0;
+        int p1=0;
+        for(int i=0;i<nums.size();i++){
+            if(nums[i]==0){
+                int tmp=nums[p0];
+                nums[p0]=nums[i];
+                nums[i]=tmp;
+                if(nums[i]==1){
+                    int tmp=nums[p1];
+                    nums[p1]=nums[i];
+                    nums[i]=tmp;
+                    
+                }
+                p0++;
+                p1++;
+                
+            }
+            else if(nums[i]==1){
+                int tmp=nums[p1];
+                nums[p1]=nums[i];
+                nums[i]=tmp;
+                p1++;
+            }
+        }
+    }
+};
+```
+	2、找0和2，0往头部扔，2往尾部扔。同样从左往右遍历数组，但此时和p2交换出来的元素可能还是2，但下标已经到了i+1，所以需要循环交换，直到p2不为2为止
+		注意要先用while判断2，这样剩下的nums[i]只能是0和1，就不需要用循环来交换
+# C++
+```
+class Solution {
+public:
+    void sortColors(vector<int>& nums) {
+        int  left=0;
+        int right=nums.size()-1;
+        int i=0;
+        while(i<=right){
+            
+            while(i<=right&&nums[i]==2){
+                swap(nums[i],nums[right]);
+                right--;
+            }
+                if(nums[i]==0){
+                swap(nums[i],nums[left]);
+                left++;
+            }
+            i++;
+            }
+        }
+    
+};
+```
