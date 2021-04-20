@@ -158,3 +158,70 @@ public:
     
 };
 ```
+
+# 28. 实现 strStr()
+	给你两个字符串 haystack 和 needle ，请你在 haystack 字符串中找出 needle 字符串出现的第一个位置（下标从 0 开始）。如果不存在，则返回  -1 。
+	字符串匹配问题，最直观的思路是暴力法遍历字符串每一作为起点的位置，判断是否匹配
+# C++实现
+```
+class Solution {
+public:
+    int strStr(string haystack, string needle) {
+        if(needle==""){return 0;}
+        int m=haystack.size();
+        int n=needle.size();
+        for(int i=0;i<(m-n+1);i++){
+            int j=0;
+            for(;j<n;j++){
+                if(haystack[i+j]!=needle[j]){
+                    break;
+                }
+            }
+            
+            if(j==n){
+                return i;
+            }
+        }
+        return -1;
+    }
+};
+```
+	可使用KMP算法进行优化，KMP算法是构建了一个前缀表，记录该元素的前缀中的最长真前缀和真后缀相等的长度len，当发生不匹配时，将指针移动到模式串的len出继续匹配
+	这样子减少了不必要的重复匹配，提高效率
+	难点是前缀表的建立。
+	
+	
+# 437. 路径总和 III
+	给定一个二叉树，它的每个结点都存放着一个整数值。
+	找出路径和等于给定数值的路径总数。
+	路径不需要从根节点开始，也不需要在叶子节点结束，但是路径方向必须是向下的（只能从父节点到子节点）
+	
+	要考虑包含root节点和不包含root节点两种情况，传的参分别为targetsum和targetsum-rootval，所以需要两个递归
+```
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+   
+    int pathSum(TreeNode* root, int targetSum) {
+       return root? dfs_withroot(root, targetSum) + pathSum(root->left, targetSum) + pathSum(root->right, targetSum): 0;
+    }
+    int dfs_withroot(TreeNode* root, int targetSum){
+        if(root==nullptr){return 0;}
+        int res=0;
+        if(root->val==targetSum){res++;}
+        res+= dfs_withroot(root->left,targetSum-root->val);
+        res += dfs_withroot(root->right,targetSum-root->val);
+        return res;
+    }
+};
+```
