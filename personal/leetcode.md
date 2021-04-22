@@ -267,3 +267,44 @@ public:
     }
 };
 ```
+
+# 363. 矩形区域不超过 K 的最大数值和
+	给你一个 m x n 的矩阵 matrix 和一个整数 k ，找出并返回矩阵内部矩形区域的不超过 k 的最大数值和。
+	
+	前缀和思路，创建一个二位数组，sum[i][j]表示以ij为右下角端点的矩形内部和大小，然后进行暴力搜索
+	固定左上角，遍历所有右下角，找最接近k的内部和
+	使用vector会超时！换成数组可以通过
+# C++实现
+```
+class Solution {
+public:
+    int maxSumSubmatrix(vector<vector<int>>& matrix, int p) {
+        int res=INT_MIN;
+        vector<vector<int>> matric_sum(matrix.size()+1,vector<int>(matrix[0].size()+1,0));
+		// int matric_sum[101][101];
+        
+        for(int i=1;i<=matrix.size();i++){
+            for(int j=1;j<=matrix[0].size();j++){
+                matric_sum[i][j]=matric_sum[i][j-1]+matric_sum[i-1][j]-matric_sum[i-1][j-1]+matrix[i-1][j-1];
+            }
+        }
+         for(int i=1;i<=matrix.size();i++){
+            for(int j=1;j<=matrix[0].size();j++){
+                    //起点
+                for(int k=i;k<=matrix.size();k++){
+                    for(int l=j;l<=matrix[0].size();l++){
+                        //终点
+                        int sum=matric_sum[k][l]-matric_sum[i-1][l]-matric_sum[k][j-1]+matric_sum[i-1][j-1] ;
+ 
+                        if(sum<=p){
+                            
+                            res=max(res,sum);
+                        }
+                }
+                    }
+            }
+        }
+        return res;
+    }
+};
+```
