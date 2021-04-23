@@ -308,3 +308,95 @@ public:
     }
 };
 ```
+
+# 368. 最大整除子集
+	给你一个由 无重复 正整数组成的集合 nums ，请你找出并返回其中最大的整除子集 answer ，子集中每一元素对 (answer[i], answer[j]) 都应当满足：
+	answer[i] % answer[j] == 0 ，或
+	answer[j] % answer[i] == 0
+	
+	动态规划思路，如果当前值能除以一个整除数组的最大值，那他属于这个整除数组，因此先对这个数组排序，从小到大
+	用一个二维dp数组存储以当前元素结尾的最大整除数组，对每一个元素，从前一个元素往前遍历数组，如果当前元素能被整除，则把自己加入当前元素的整除数组，并判断大小是否为最大。
+	转移方程：
+		if(tmp_len<dp[j].size()){
+			tmp_len=dp[j].size();
+			dp[i]=dp[j];
+        }
+		dp[i].push_back(nums[i]);
+
+```
+class Solution {
+public:
+    vector<int> largestDivisibleSubset(vector<int>& nums) {
+        sort(nums.begin(),nums.end());
+        int res=0;
+        int max_len=0;
+        vector<vector<int>> dp(nums.size());
+        dp[0].push_back(nums[0]);
+        for(int i=1;i<nums.size();i++){
+            int tmp_len=0;
+            for(int j=i-1;j>=0;j--){
+                if(nums[i]%nums[j]==0){
+                    if(tmp_len<dp[j].size()){
+                        tmp_len=dp[j].size();
+                        dp[i]=dp[j];
+                    }
+                }
+            }
+            dp[i].push_back(nums[i]);
+            if(dp[i].size()>max_len){
+                max_len=dp[i].size();
+                res=i;
+            }
+        }
+        return dp[res];
+    }
+};
+```
+	也可以用时间换空间
+	dp数组表示最大整除数组的长度，先遍历数组，找到最大整除数组的长度和最大值
+	遍历数组，将能被最大值整除的元素压入数组，倒推获得最大数组
+	
+```
+class Solution {
+public:
+    vector<int> largestDivisibleSubset(vector<int>& nums) {
+        int len = nums.size();
+        sort(nums.begin(), nums.end());
+
+        // 第 1 步：动态规划找出最大子集的个数、最大子集中的最大整数
+        vector<int> dp(len, 1);
+        int maxSize = 1;
+        int maxVal = dp[0];
+        for (int i = 1; i < len; i++) {
+            for (int j = 0; j < i; j++) {
+                // 题目中说「没有重复元素」很重要
+                if (nums[i] % nums[j] == 0) {
+                    dp[i] = max(dp[i], dp[j] + 1);
+                }
+            }
+
+            if (dp[i] > maxSize) {
+                maxSize = dp[i];
+                maxVal = nums[i];
+            }
+        }
+
+        // 第 2 步：倒推获得最大子集
+        vector<int> res;
+        if (maxSize == 1) {
+            res.push_back(nums[0]);
+            return res;
+        }
+
+        for (int i = len - 1; i >= 0 && maxSize > 0; i--) {
+            if (dp[i] == maxSize && maxVal % nums[i] == 0) {
+                res.push_back(nums[i]);
+                maxVal = nums[i];
+                maxSize--;
+            }
+        }
+        return res;
+    }
+};
+
+```
