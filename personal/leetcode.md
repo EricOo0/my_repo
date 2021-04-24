@@ -400,3 +400,30 @@ public:
 };
 
 ```
+
+# 377. 组合总和 Ⅳ
+
+	给你一个由 不同 整数组成的数组 nums ，和一个目标整数 target 。请你从 nums 中找出并返回总和为 target 的元素组合的个数。
+	题目数据保证答案符合 32 位整数范围
+	
+	排列组合的个数主要思路就是回溯和动态规划，因为可以重复使用同一个元素无数次，回溯不太适用。
+	假设dp[i]为目标i的组合个数，那么dp[i]等于所有dp[i-num]的和，即组成目标数减去数组中一个小于i的数的组合个数有多少个
+	
+#C++ 实现
+```
+class Solution {
+public:
+    int combinationSum4(vector<int>& nums, int target) {
+        vector<int>dp(target +1);
+        dp[0]=1;
+        for(int i=1;i<=target;i++){
+            for(int j=0;j<nums.size();j++){
+                if(nums[j]<=i && dp[i-nums[j]]<INT_MAX-dp[i]){
+                    dp[i]+=dp[i-nums[j]];
+                }
+            }
+        }
+        return dp[target];
+    }
+};
+```
