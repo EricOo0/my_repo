@@ -427,3 +427,80 @@ public:
     }
 };
 ```
+
+# 897. 递增顺序搜索树
+    给你一棵二叉搜索树，请你 按中序遍历 将其重新排列为一棵递增顺序搜索树，使树中最左边的节点成为树的根节点，并且每个节点没有左子节点，只有一个右子节点。
+	
+	最直接的思路就是中序遍历搜索树，用个数组存储所有节点，然后将数组重新排列成一颗顺序树
+```
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* increasingBST(TreeNode* root) {
+        vector<TreeNode*> tree;
+        dfs(root,tree);
+        TreeNode *head =new TreeNode(0);
+
+        TreeNode *res=head;
+        for(auto t:tree){
+            TreeNode *trees =new TreeNode(t->val);
+            head->right=trees;
+            head=trees;
+        }
+        return res->right;
+    }
+    void dfs(TreeNode*root, vector<TreeNode *> &tree){
+        if(root==nullptr){return;}
+        dfs(root->left,tree);
+        tree.push_back(root);
+        dfs(root->right,tree);
+    }
+};
+```
+
+	也可以边遍历边排序
+```
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* resnode=nullptr;
+    TreeNode* increasingBST(TreeNode* root) {
+        TreeNode * head=new TreeNode(0);
+        resnode=head;
+        TreeNode *res=head;
+        dfs(root);
+        return res->right;
+    }
+    void dfs(TreeNode* root){
+        if(root==nullptr){
+            return ;
+        }
+        dfs(root->left);
+        resnode->right=root;
+        root->left=nullptr;
+        resnode=root;
+        dfs(root->right);
+        
+    }
+};
+```
