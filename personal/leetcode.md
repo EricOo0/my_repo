@@ -504,3 +504,160 @@ public:
     }
 };
 ```
+# 1011. 在 D 天内送达包裹的能力
+	传送带上的包裹必须在 D 天内从一个港口运送到另一个港口。
+	传送带上的第 i 个包裹的重量为 weights[i]。每一天，我们都会按给出重量的顺序往传送带上装载包裹。我们装载的重量不会超过船的最大运载重量。
+	返回能在 D 天内将传送带上的所有包裹送达的船的最低运载能力
+	
+	船的运送能力必须比所有货物的最大值大，也得比货物总和/天数大才可以运送完，同时运送能力没必要比货物总和大，由此缺点了运载能力的上下界
+	然后就是遍历这个范围内的值，缺点一个符合条件的最小运载能力————因此使用二分查找降低查找范围
+```
+class Solution {
+public:
+    int shipWithinDays(vector<int>& weights, int D) {
+        //lower_bound =weights/D
+        //upper_bound =weight
+        int sum=accumulate(weights.begin(),weights.end(),0);
+        int largest =*max_element(weights.begin(),weights.end());
+        int left=max(sum/D,largest);
+        int right=sum;
+        int mid=(right+left)/2;
+        while(left<right){
+            mid=(right+left)/2;
+            int day=0;
+            int tmp_sum=0;
+            for(int i=0;i<weights.size();i++){
+                
+                tmp_sum+=weights[i];
+                if(tmp_sum > mid){
+                    day++;
+                    i--;
+                    tmp_sum=0;
+                }
+                else if(tmp_sum==mid){
+                    day++;
+                    tmp_sum=0;
+                }
+                else if(i==weights.size()-1){
+                    day++;
+                }
+                
+            }
+            cout<<day<<" "<<mid<<" "<<left<<" "<< right<<endl;
+            if(day > D){
+               left=mid+1; 
+            }
+            else if(day<=D){
+                right=mid;
+            }
+        }
+        return left;
+    }
+};
+```
+
+# 938. 二叉搜索树的范围和
+
+	给定二叉搜索树的根结点 root，返回值位于范围 [low, high] 之间的所有结点的值的和。
+	
+	直接中序遍历，找到符合条件的节点值加上即可；也可使用广度优先搜索，利用队列完成
+```
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int res=0;
+    int rangeSumBST(TreeNode* root, int low, int high) {
+        dfs(root,low,high);
+        return res;
+    }
+    void dfs(TreeNode* root,int low,int high){
+        if(root== nullptr){return;}
+
+        if(root->val >low){
+            dfs(root->left,low,high);
+        }
+        if(root->val >=low&& root->val <=high){
+            res+=root->val;
+        }
+        if(root->val < high){
+            dfs(root->right,low,high);
+        }
+    }
+};
+```
+
+# 3. 无重复字符的最长子串
+
+	给定一个字符串，请你找出其中不含有重复字符的 最长子串 的长度。
+
+	动态规划
+	用一个哈希表存储已出现字符的下标，用一个数组记录当前字符为结尾的最长无重复子串，如果当前字符没有出现过，则长度+1，如果出现过，则判断
+	出现的位置是否在前一个元素记录的最长子串范围内，不在则直接+1，在则最长无重复子串长度为从元素的位置到当前位置-1；
+```
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        unordered_map<char,int> freq;
+        int res=0;
+        vector<int> dp(s.size()+1,0);//这个字符最后出现的位置
+        dp[0]=0;
+        for(int i=1;i<=s.size();i++){
+            if(freq.find(s[i-1])==freq.end()){
+                dp[i]=dp[i-1]+1;
+                freq[s[i-1]]=i-1;
+            }
+            else{
+                if(freq[s[i-1]]<(i-1-dp[i-1])){
+                    //上次出现的位置不在上一个字符子串范围内
+                    dp[i]=dp[i-1]+1;
+                }
+                else
+                dp[i]=(i-1)-freq[s[i-1]];
+                freq[s[i-1]]=i-1;
+            }
+            res=max(res,dp[i]);
+        }
+        return res;
+    }
+};
+```
+	滑动窗口
+	用一个哈希表或哈希set存储已出现字符；用两个指针指向窗口左右，当右指针指向的元素未出现过，则右指针+1，压入该元素；出现过，则左指针+1，并且弹出该元素
+```
+	class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        // 哈希集合，记录每个字符是否出现过
+        unordered_set<char> occ;
+        int n = s.size();
+        // 右指针，初始值为 -1，相当于我们在字符串的左边界的左侧，还没有开始移动
+        int rk = -1, ans = 0;
+        // 枚举左指针的位置，初始值隐性地表示为 -1
+        for (int i = 0; i < n; ++i) {
+            if (i != 0) {
+                // 左指针向右移动一格，移除一个字符
+                occ.erase(s[i - 1]);
+            }
+            while (rk + 1 < n && !occ.count(s[rk + 1])) {
+                // 不断地移动右指针
+                occ.insert(s[rk + 1]);
+                ++rk;
+            }
+            // 第 i 到 rk 个字符是一个极长的无重复字符子串
+            ans = max(ans, rk - i + 1);
+        }
+        return ans;
+    }
+};
+
+```
