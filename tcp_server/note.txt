@@ -1,0 +1,40 @@
+出现客户端粘包问题的解决办法：
+	现象：客户端把两端#msg#hello_reply一起接收导致用户id读取错误
+	原因：TCP粘包，两个数据包一起到了，客户端一起读取
+	解决办法：设置一个结构体，报文头部规定内容长度
+	struct header{
+		int nDataType;											//数据包类型，标识对应的对象类型
+		int nDataSize;											//数据包中szData真实数据的长度
+
+	}
+	每次先读取8个字节的报文头部，获得数据大小
+	然后再读取datasize长度的数据
+	用sstream分别获取类型和长度
+	  struct header{
+      int a;
+      int b;
+      char c;
+        };
+
+		header test={1,2,'c'};
+		 std::cout << test.a << '\n';
+		std::cout << test.b << '\n';
+		std::cout << test.c << '\n';
+	std::string  ddd ="12";
+	char fff[3];
+	 memcpy(fff,&test,sizeof(test));
+	  //  ots<<test.a<<test.b;
+		header test2;
+		memset(&test2,0,sizeof(test2));
+		memcpy(&test2,fff,sizeof(test2));
+
+	  std::cout << test2.a << '\n';
+
+	  std::cout << test2.b << '\n';
+	std::cout << test2.c << '\n';
+
+	std::string ss;
+	ss="abc";
+	std::cout<<ss-'0';
+	return 0;
+	}
